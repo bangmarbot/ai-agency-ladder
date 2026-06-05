@@ -1,7 +1,9 @@
 # The AI Agency Ladder
 
-A single-page **scrollytelling** field note for the ALVA team — on what it actually
+A single-page **scrollytelling** field note for the team — on what it actually
 looks like to go from *chatting with one AI assistant* to *conducting a squad of agents*.
+
+**Live:** https://bangmarbot.github.io/ai-agency-ladder/
 
 > You're already using AI. You're just standing on the bottom rung.
 
@@ -15,19 +17,13 @@ looks like to go from *chatting with one AI assistant* to *conducting a squad of
 
 ## How to view it
 
-This is a **single self-contained file** — no install, no build step.
+- **Easiest:** open the live link → https://bangmarbot.github.io/ai-agency-ladder/
+  (works on any device, including phones).
+- **Offline:** download `index.html` and open it in any browser.
 
-- **Easiest:** download `index.html` and open it in any browser (works offline).
-- Or clone the repo and open `index.html`.
-
-Everything (HTML + CSS + JS) lives in `index.html`. The only external request is
-Google Fonts (falls back to system fonts offline).
-
-## Want a shareable URL later?
-
-This repo is private, so there's no public link by design. If you ever want one,
-enable **GitHub Pages** on the default branch — the site is plain static HTML and
-will work as-is.
+It's a **single self-contained file** — no install, no build step. Everything
+(HTML + CSS + JS) lives in `index.html`; the only external request is Google
+Fonts (falls back to system fonts offline).
 
 ## Stack
 
