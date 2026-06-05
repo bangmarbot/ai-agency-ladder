@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>The AI Agency Ladder — a field note for the team</title>
+<meta name="description" content="How one product manager went from chatting with an AI assistant to conducting a squad of agents — and how you can climb the same ladder." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0c0e0d;
+    --bg-2:#141715;
+    --ink:#eef2ef;
+    --ink-soft:#9aa4a0;
+    --ink-faint:#5f6864;
+    --accent:#33ffc9;            /* ALVA electric green */
+    --accent-deep:#19b892;
+    --line:#262b29;
+    --card:#15191700;
+    --glow:#33ffc9;              /* shifts per rung via JS */
+    --serif: "Space Grotesk", system-ui, sans-serif;
+    --sans: "Inter", system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.6;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  /* ambient aurora that drifts with the active rung's glow color */
+  body::before{
+    content:"";
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(60vw 60vw at 80% -10%, color-mix(in srgb, var(--glow) 16%, transparent), transparent 60%),
+      radial-gradient(50vw 50vw at -10% 110%, color-mix(in srgb, var(--glow) 12%, transparent), transparent 60%);
+    transition:background 1.2s ease;
+  }
+  /* faint grain */
+  body::after{
+    content:"";
+    position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative; z-index:1}
+
+  /* scroll progress */
+  .progress{
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background:linear-gradient(90deg, var(--accent-deep), var(--accent));
+    z-index:50; box-shadow:0 0 12px var(--accent);
+    transition:width .08s linear;
+  }
+
+  a{color:var(--accent); text-decoration:none}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height:100svh; display:flex; flex-direction:column; justify-content:center;
+    padding:clamp(24px,6vw,80px); max-width:1100px; margin:0 auto;
+  }
+  .eyebrow{
+    font-family:var(--serif); font-weight:600; letter-spacing:.18em; text-transform:uppercase;
+    font-size:clamp(11px,1.4vw,13px); color:var(--accent);
+    display:inline-flex; align-items:center; gap:10px; margin-bottom:28px;
+  }
+  .eyebrow::before{content:""; width:28px; height:1px; background:var(--accent); display:inline-block}
+  .hero h1{
+    font-family:var(--serif); font-weight:700; letter-spacing:-.02em;
+    font-size:clamp(34px,6.4vw,76px); line-height:1.02; margin:0 0 26px;
+    max-width:16ch;
+  }
+  .hero h1 .hl{color:var(--accent)}
+  .hero p.lede{
+    font-size:clamp(17px,2.2vw,22px); color:var(--ink-soft); max-width:54ch; margin:0;
+  }
+  .scrollhint{
+    margin-top:clamp(40px,8vh,80px); font-family:var(--serif); font-size:13px;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint);
+    display:flex; align-items:center; gap:12px;
+  }
+  .scrollhint .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.7);opacity:.35}}
+
+  /* ---------- INTRO ---------- */
+  .intro{
+    max-width:760px; margin:0 auto; padding:clamp(60px,14vh,140px) clamp(24px,6vw,40px);
+  }
+  .intro p{font-size:clamp(20px,2.8vw,30px); font-family:var(--serif); font-weight:500; line-height:1.4; color:var(--ink)}
+  .intro p .mut{color:var(--ink-faint)}
+
+  /* ---------- LADDER STAGE (scrollytelling) ---------- */
+  .stage{
+    display:grid; grid-template-columns:minmax(280px,420px) 1fr; gap:0;
+    max-width:1240px; margin:0 auto; padding:0 clamp(20px,5vw,40px);
+  }
+  .rail{
+    position:sticky; top:0; height:100svh; display:flex; align-items:center;
+  }
+  .ladder{position:relative; width:100%; padding-left:14px}
+  .ladder .spine{
+    position:absolute; left:22px; top:6px; bottom:6px; width:2px; background:var(--line);
+    border-radius:2px;
+  }
+  .ladder .spine-fill{
+    position:absolute; left:22px; top:6px; width:2px; height:0%;
+    background:linear-gradient(180deg, var(--accent), var(--accent-deep));
+    border-radius:2px; box-shadow:0 0 14px var(--glow);
+    transition:height .5s cubic-bezier(.4,0,.2,1);
+  }
+  .node{
+    position:relative; display:flex; align-items:center; gap:18px;
+    padding:18px 0; opacity:.42; transition:opacity .4s ease;
+  }
+  .node .bullet{
+    flex:0 0 auto; width:18px; height:18px; margin-left:14px; border-radius:50%;
+    background:var(--bg-2); border:2px solid var(--line); position:relative; z-index:2;
+    transition:all .4s ease;
+  }
+  .node .meta{display:flex; flex-direction:column}
+  .node .k{font-family:var(--serif); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint); transition:color .4s ease}
+  .node .t{font-family:var(--serif); font-weight:600; font-size:16px; color:var(--ink-soft); transition:color .4s ease; line-height:1.25}
+  .node.done{opacity:.7}
+  .node.done .bullet{border-color:var(--accent-deep); background:var(--accent-deep)}
+  .node.active{opacity:1}
+  .node.active .bullet{
+    border-color:var(--accent); background:var(--accent);
+    box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 22%,transparent), 0 0 22px var(--glow);
+    transform:scale(1.15);
+  }
+  .node.active .k{color:var(--accent)}
+  .node.active .t{color:var(--ink)}
+
+  .steps{padding:18vh 0}
+  .step{
+    min-height:88vh; display:flex; flex-direction:column; justify-content:center;
+    padding:clamp(20px,5vh,60px) 0 clamp(20px,5vh,60px) clamp(8px,4vw,56px);
+  }
+  .step .tag{
+    font-family:var(--serif); font-weight:600; letter-spacing:.18em; text-transform:uppercase;
+    font-size:12px; color:var(--accent); margin-bottom:18px;
+  }
+  .step h2{
+    font-family:var(--serif); font-weight:700; letter-spacing:-.015em;
+    font-size:clamp(28px,4.8vw,52px); line-height:1.05; margin:0 0 22px; max-width:16ch;
+  }
+  .step p{font-size:clamp(16px,2.1vw,20px); color:var(--ink-soft); max-width:48ch; margin:0}
+  .step p .em{color:var(--ink); font-weight:500}
+  .mode{
+    margin-top:30px; display:inline-flex; align-items:center; gap:10px;
+    font-family:var(--serif); font-size:13px; letter-spacing:.06em;
+    color:var(--ink); background:color-mix(in srgb,var(--accent) 9%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);
+    padding:9px 16px; border-radius:999px;
+  }
+  .mode b{color:var(--accent); font-weight:600}
+
+  /* reveal on enter */
+  .reveal{opacity:0; transform:translateY(28px); transition:opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1; transform:none}
+
+  /* ---------- SUMMIT ---------- */
+  .summit{
+    max-width:900px; margin:0 auto; padding:clamp(80px,18vh,180px) clamp(24px,6vw,40px);
+    text-align:center;
+  }
+  .summit .star{font-size:clamp(28px,5vw,46px); color:var(--accent); filter:drop-shadow(0 0 18px var(--glow))}
+  .summit .tag{font-family:var(--serif); letter-spacing:.2em; text-transform:uppercase; color:var(--accent); font-size:12px; margin:18px 0 8px}
+  .summit h2{
+    font-family:var(--serif); font-weight:700; font-size:clamp(34px,6.5vw,68px); letter-spacing:-.02em;
+    line-height:1.04; margin:0 0 8px;
+  }
+  .summit h2 .arrow{color:var(--ink-faint)}
+  .summit h2 .b{color:var(--accent)}
+  .summit p{font-size:clamp(17px,2.4vw,23px); color:var(--ink-soft); max-width:50ch; margin:24px auto 0}
+
+  /* ---------- CTA ---------- */
+  .cta{max-width:1040px; margin:0 auto; padding:clamp(60px,12vh,120px) clamp(24px,6vw,40px) clamp(40px,8vh,80px)}
+  .cta h2{font-family:var(--serif); font-weight:700; font-size:clamp(28px,5vw,54px); letter-spacing:-.015em; margin:0 0 18px}
+  .cta h2 .hl{color:var(--accent)}
+  .cta > p{font-size:clamp(16px,2.2vw,20px); color:var(--ink-soft); max-width:56ch}
+  .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:46px}
+  .ccard{
+    border:1px solid var(--line); border-radius:16px; padding:26px 24px;
+    background:linear-gradient(180deg, color-mix(in srgb,var(--accent) 4%,transparent), transparent);
+    transition:border-color .3s ease, transform .3s ease;
+  }
+  .ccard:hover{border-color:color-mix(in srgb,var(--accent) 45%,transparent); transform:translateY(-4px)}
+  .ccard .n{font-family:var(--serif); font-weight:700; color:var(--accent); font-size:14px; letter-spacing:.1em}
+  .ccard h3{font-family:var(--serif); font-weight:600; font-size:20px; margin:14px 0 8px}
+  .ccard p{margin:0; color:var(--ink-soft); font-size:15px}
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    max-width:1040px; margin:0 auto; padding:40px clamp(24px,6vw,40px) 80px;
+    border-top:1px solid var(--line); color:var(--ink-faint); font-size:14px;
+    display:flex; flex-wrap:wrap; gap:8px 18px; justify-content:space-between; align-items:center;
+  }
+  footer .meta-r{font-family:var(--serif); letter-spacing:.04em}
+
+  /* ---------- MOBILE ---------- */
+  .mobile-rail{display:none}
+  @media (max-width:860px){
+    .stage{grid-template-columns:1fr}
+    .rail{display:none}
+    .steps{padding:2vh 0 0}
+    .step{padding-left:0; min-height:auto; padding:9vh 0}
+    .cards{grid-template-columns:1fr}
+    /* slim sticky rung indicator */
+    .mobile-rail{
+      display:flex; position:sticky; top:0; z-index:40; gap:8px; align-items:center;
+      padding:12px 4px; margin-bottom:6px;
+      background:color-mix(in srgb,var(--bg) 86%,transparent); backdrop-filter:blur(8px);
+      border-bottom:1px solid var(--line);
+    }
+    .mobile-rail .mdot{width:8px;height:8px;border-radius:50%;background:var(--line);transition:all .3s ease}
+    .mobile-rail .mdot.done{background:var(--accent-deep)}
+    .mobile-rail .mdot.active{background:var(--accent);box-shadow:0 0 10px var(--glow);transform:scale(1.4)}
+    .mobile-rail .mlabel{margin-left:auto;font-family:var(--serif);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important; animation:none!important}
+    .reveal{opacity:1; transform:none}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <span class="eyebrow">AI at ALVA · a field note for the team</span>
+    <h1>You're already using AI. You're just standing on the <span class="hl">bottom rung</span>.</h1>
+    <p class="lede">How one product manager went from chatting with an assistant to conducting a squad of agents — and how you can climb the same ladder.</p>
+    <div class="scrollhint"><span class="dot"></span> Scroll to climb</div>
+  </header>
+
+  <!-- INTRO -->
+  <section class="intro">
+    <p class="reveal">Most of us use AI like a smarter search box. <span class="mut">Ask, copy, paste.</span> Useful — but you're still doing all the work. There's a ladder above that. Five rungs. Here's the climb.</p>
+  </section>
+
+  <!-- LADDER STAGE -->
+  <section class="stage">
+    <!-- sticky rail (desktop) -->
+    <aside class="rail">
+      <div class="ladder" id="ladder">
+        <div class="spine"></div>
+        <div class="spine-fill" id="spineFill"></div>
+        <div class="node" data-i="0"><span class="bullet"></span><span class="meta"><span class="k">Rung 01</span><span class="t">One assistant, one task</span></span></div>
+        <div class="node" data-i="1"><span class="bullet"></span><span class="meta"><span class="k">Rung 02</span><span class="t">Give it hands</span></span></div>
+        <div class="node" data-i="2"><span class="bullet"></span><span class="meta"><span class="k">Rung 03</span><span class="t">Memory &amp; a workspace</span></span></div>
+        <div class="node" data-i="3"><span class="bullet"></span><span class="meta"><span class="k">Rung 04</span><span class="t">One agent → a squad</span></span></div>
+        <div class="node" data-i="4"><span class="bullet"></span><span class="meta"><span class="k">The shift</span><span class="t">Operator → Orchestrator</span></span></div>
+      </div>
+    </aside>
+
+    <!-- scrolling steps -->
+    <div class="steps">
+      <!-- mobile slim rail -->
+      <div class="mobile-rail" id="mrail">
+        <span class="mdot" data-i="0"></span><span class="mdot" data-i="1"></span><span class="mdot" data-i="2"></span><span class="mdot" data-i="3"></span><span class="mdot" data-i="4"></span>
+        <span class="mlabel" id="mlabel">Rung 01</span>
+      </div>
+
+      <article class="step" data-i="0" data-glow="#33ffc9">
+        <div class="reveal">
+          <div class="tag">Rung 01</div>
+          <h2>One assistant, one task</h2>
+          <p>You ask, it answers. We fed it months of community chatter and got the sentiment back in minutes — <span class="em">no dashboard, no infra, no analyst queue.</span> Real value. But notice the bottleneck: every task still routes through you, one prompt at a time.</p>
+          <span class="mode">Mode: <b>ask → answer</b></span>
+        </div>
+      </article>
+
+      <article class="step" data-i="1" data-glow="#33ffd6">
+        <div class="reveal">
+          <div class="tag">Rung 02</div>
+          <h2>Give it hands</h2>
+          <p>Connect the AI to your tools and it stops giving advice and starts doing the work. Wired into <span class="em">Jira, Metabase and Odoo,</span> it queried over a million records, pulled live numbers across five databases, and wrote back — no copy-paste in sight. An advisor became an operator.</p>
+          <span class="mode">Mode: <b>it reads &amp; writes your systems</b></span>
+        </div>
+      </article>
+
+      <article class="step" data-i="2" data-glow="#4af0c0">
+        <div class="reveal">
+          <div class="tag">Rung 03</div>
+          <h2>Give it memory and a workspace</h2>
+          <p>A fresh chat forgets everything. So we gave it <span class="em">persistent memory</span> and a shared board to work on. Now context survives between sessions — decisions, constraints, where we left off — and the work lives somewhere both of us can see. The AI stopped being a goldfish.</p>
+          <span class="mode">Mode: <b>context that persists</b></span>
+        </div>
+      </article>
+
+      <article class="step" data-i="3" data-glow="#33ffb0">
+        <div class="reveal">
+          <div class="tag">Rung 04</div>
+          <h2>From one agent to a squad</h2>
+          <p>The leap. Instead of one generalist, a team of specialists: <span class="em">a lead that plans and reviews, a developer that writes code, a designer wired into Figma, a tester that breaks things.</span> You hand out the cards; they execute in parallel; you review what comes back. You're not the doer anymore.</p>
+          <span class="mode">Mode: <b>you assign, they deliver</b></span>
+        </div>
+      </article>
+
+      <article class="step" data-i="4" data-glow="#7af7d4">
+        <div class="reveal">
+          <div class="tag">★ The shift</div>
+          <h2>From doing to conducting</h2>
+          <p>Each rung trades a little of your time for a lot of leverage. By the top, the scarce skill isn't prompting — it's the conductor's craft: <span class="em">breaking work into pieces, giving sharp context, and judging the output.</span> The AI got more capable at every step. The real upgrade was in how you work.</p>
+          <span class="mode">Mode: <b>you orchestrate</b></span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- SUMMIT -->
+  <section class="summit">
+    <div class="reveal">
+      <div class="star">★</div>
+      <div class="tag">The whole climb, in one line</div>
+      <h2><span>Operator</span> <span class="arrow">→</span> <span class="b">Orchestrator</span></h2>
+      <p>You don't get a better AI at the top. You get a better way of working. The ladder isn't about the model — it's about how much of the doing you're willing to hand off.</p>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="reveal">
+      <h2>Your first rung — <span class="hl">this week</span></h2>
+      <p>You don't jump to the top. You climb one rung. Adoption isn't a big-bang rollout — it's one task, one team, one rung at a time.</p>
+      <div class="cards">
+        <div class="ccard">
+          <div class="n">01</div>
+          <h3>Pick a task</h3>
+          <p>One repetitive thing you do every week. Boring is perfect. Hand it to the AI and judge the result.</p>
+        </div>
+        <div class="ccard">
+          <div class="n">02</div>
+          <h3>Give it a tool</h3>
+          <p>Point it at one system you live in — a sheet, a board, a database. Let it read before it writes.</p>
+        </div>
+        <div class="ccard">
+          <div class="n">03</div>
+          <h3>Climb</h3>
+          <p>Add memory. Add a second specialist. Each rung is small. The leverage compounds.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>A field note for the ALVA team — climbing the ladder together.</span>
+    <span class="meta-r">Built, of course, by handing it to an agent · 2026</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var prog = document.getElementById('progress');
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('.ladder .node'));
+  var mdots = Array.prototype.slice.call(document.querySelectorAll('.mobile-rail .mdot'));
+  var mlabel = document.getElementById('mlabel');
+  var spineFill = document.getElementById('spineFill');
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+  var glows = steps.map(function(s){return s.getAttribute('data-glow');});
+  var labels = ['Rung 01','Rung 02','Rung 03','Rung 04','The shift'];
+  var current = -1;
+
+  // scroll progress bar
+  function onScroll(){
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    prog.style.width = pct.toFixed(2) + '%';
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  function setActive(i){
+    if(i === current) return;
+    current = i;
+    nodes.forEach(function(n,idx){
+      n.classList.toggle('active', idx === i);
+      n.classList.toggle('done', idx < i);
+    });
+    mdots.forEach(function(d,idx){
+      d.classList.toggle('active', idx === i);
+      d.classList.toggle('done', idx < i);
+    });
+    if(mlabel) mlabel.textContent = labels[i] || '';
+    // fill the spine up to the active node center
+    if(spineFill && nodes.length > 1){
+      var frac = i / (nodes.length - 1);
+      spineFill.style.height = (frac * 100) + '%';
+    }
+    // morph ambient glow
+    if(glows[i]) document.documentElement.style.setProperty('--glow', glows[i]);
+  }
+
+  // activate the step closest to viewport center
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var i = parseInt(e.target.getAttribute('data-i'),10);
+        setActive(i);
+      }
+    });
+  }, {rootMargin:'-45% 0px -45% 0px', threshold:0});
+  steps.forEach(function(s){ io.observe(s); });
+
+  // generic reveal-on-enter
+  var rio = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('in'); rio.unobserve(e.target); }
+    });
+  }, {rootMargin:'0px 0px -12% 0px', threshold:0.15});
+  document.querySelectorAll('.reveal').forEach(function(el){ rio.observe(el); });
+})();
+</script>
+</body>
+</html>
